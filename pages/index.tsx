@@ -1,6 +1,9 @@
 import Head from 'next/head'
 import clientPromise from '../lib/mongodb'
 import { InferGetServerSidePropsType } from 'next'
+// import {recordStateChange, recordPlaybackQualityChange} from "../YoutubeEmbed";
+import YouTube from "react-youtube";
+import { useState, useRef } from 'react';
 
 export async function getServerSideProps(context) {
   try {
@@ -28,6 +31,324 @@ export async function getServerSideProps(context) {
 export default function Home({
   isConnected,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+
+  const numPlaybackQualityChanges = useRef(0);
+  const numTimesBuffering = useRef(0);
+
+  const totalTimeBuffering = useRef(0);
+  const totalTimeBufferingToStartVideo = useRef(0);
+
+  const videoPlayerLoadStart = useRef(0);
+  const videoPlayerPlayingStart = useRef(0);
+
+  const timeActiveBufferingInProgress = useRef(0);
+
+  const videoBufferingToStart = useRef(false);
+  const videoBufferingInProgress = useRef(false);
+
+  const hd2160_playbackQualityTime = useRef(0);
+  const hd1440_playbackQualityTime = useRef(0);
+  const hd1080_playbackQualityTime = useRef(0);
+  const hd720_playbackQualityTime = useRef(0);
+  const large_playbackQualityTime = useRef(0);
+  const medium_playbackQualityTime = useRef(0);
+  const small_playbackQualityTime = useRef(0);
+  const tiny_playbackQualityTime = useRef(0);
+  const current_playbackQualityStartTime = useRef(0);
+
+  const formerVideoQualityType = useRef("");
+  const currentVideoQualityType = useRef("");
+
+  const recordStateChange = (e) => {
+    // const duration = e.target.getDuration();
+    // const currentTime = e.target.getCurrentTime();
+
+    // console.log("recording a state change with value: " + e.data);
+    if (e.data == -1) // new video is about to start
+    {
+      console.log("recording a state change with value: " + e.data);
+      // videoPlayerLoadStart = new Date();
+      videoPlayerLoadStart.current = ( (new Date()).getTime() ); 
+      // videoBufferingToStart = true;
+      videoBufferingToStart.current = true;
+      //console.log("new video is about to start");
+    }
+    else if (e.data == 1) // video is playing
+    {
+      console.log("recording a state change with value: " + e.data);
+      if (videoBufferingToStart.current)
+      {
+        // videoPlayerPlayingStart = new Date();
+        videoPlayerPlayingStart.current = ( (new Date()).getTime() );
+        const timeBuffering = videoPlayerPlayingStart.current - videoPlayerLoadStart.current;
+        
+        console.log("time buffering to start video is: " + timeBuffering);
+        totalTimeBufferingToStartVideo.current = (timeBuffering);
+        // videoBufferingToStart = false;
+        videoBufferingToStart.current = (false);
+      }
+      else if (videoBufferingInProgress.current)
+      {
+        // console.log("time active buffering when video playing is: " + timeActiveBufferingInProgress); 
+        const timeBuffering = (new Date()).getTime() - timeActiveBufferingInProgress.current;
+        totalTimeBuffering.current = (totalTimeBuffering.current + timeBuffering);
+        videoBufferingInProgress.current = true;
+      }
+    }
+    else if (e.data == 3) // video is buffering
+    {
+      console.log("recording a state change with value: " + e.data);
+      numTimesBuffering.current = (numTimesBuffering.current + 1);
+      
+      // timeActiveBufferingInProgress = new Date();
+      timeActiveBufferingInProgress.current = ((new Date()).getTime());
+      console.log("epoch time when active buffering starts: " + timeActiveBufferingInProgress.current);
+      videoBufferingInProgress.current = (true);
+    }
+    // else if (e.data == 5) // video is cued
+    // {
+    //   console.log("video is cued. This actually played??? Usually it doesn't.");
+    // }
+    else if (e.data == 0)// video has ended (this one only plays when the entire player ends and not before the next video starts for a playlist)
+    {
+      // console.log("720 time show is : " + hd720_playbackQualityTime.current);
+      // uploadHandler(
+      //   {
+      //     networkProtocol: "QUIC",
+      //     networkSpeed: "3G",
+      //     numTimesBuffering: numTimesBuffering.current,
+      //     totalTimeBuffering: totalTimeBuffering.current,
+      //     totalTimeBufferingToStartVideo: totalTimeBufferingToStartVideo.current,
+      //     numPlaybackQualityChanges: numPlaybackQualityChanges.current,
+      //     hd2160PlaybackQualityTime: hd2160_playbackQualityTime.current,
+      //     hd1440PlaybackQualityTime: hd1440_playbackQualityTime.current,
+      //     hd1080PlaybackQualityTime: hd1080_playbackQualityTime.current,
+      //     hd720PlaybackQualityTime: hd720_playbackQualityTime.current,
+      //     largePlaybackQualityTime: large_playbackQualityTime.current,
+      //     mediumPlaybackQualityTime: medium_playbackQualityTime.current,
+      //     smallPlaybackQualityTime: small_playbackQualityTime.current,
+      //     tinyPlaybackQualityTime: tiny_playbackQualityTime.current,
+      //   });
+    }
+  };
+
+  const videoQualityTypes = {
+    hd2160: "hd2160",
+    hd1440: "hd1440",
+    hd1080: "hd1080",
+    hd720: "hd720",
+    large: "large",
+    medium: "medium",
+    small: "small",
+    tiny: "tiny",
+  }
+
+  const recordPlaybackQualityChange = (e) => {
+    console.log("recording a playback quality change with value: " + e.data);
+    numPlaybackQualityChanges.current = (numPlaybackQualityChanges.current + 1);
+
+    // switch to close timer for previous video quality
+    switch (formerVideoQualityType.current) {
+      case videoQualityTypes.hd2160:
+        // console.log("video quality is 2160p / close timer");
+        hd2160_playbackQualityTime.current = (hd2160_playbackQualityTime.current + ( (new Date()).getTime() - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.hd1440:
+        // console.log("video quality is 1440p / close timer");
+        hd1440_playbackQualityTime.current = (hd1440_playbackQualityTime.current + ( (new Date()).getTime() - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.hd1080:
+        // console.log("video quality is 1080p / close timer");
+        hd1080_playbackQualityTime.current = (hd1080_playbackQualityTime.current + ( (new Date()).getTime() - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.hd720:
+        // console.log("video quality is 720p / close timer");
+        hd720_playbackQualityTime.current = (hd720_playbackQualityTime.current + ( (new Date()).getTime() - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.large:
+        // console.log("video quality is large / close timer");
+        large_playbackQualityTime.current = (large_playbackQualityTime.current + ( (new Date()).getTime() - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.medium:
+        // console.log("video quality is medium / close timer");
+        medium_playbackQualityTime.current = (medium_playbackQualityTime.current + ( (new Date()).getTime() - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.small:
+        // console.log("video quality is small / close timer");
+        small_playbackQualityTime.current = (small_playbackQualityTime.current + ( (new Date()).getTime() - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.tiny:
+        // console.log("video quality is tiny / close timer");
+        tiny_playbackQualityTime.current = (tiny_playbackQualityTime.current + ( (new Date()).getTime() - current_playbackQualityStartTime.current));
+        break;
+
+      default:
+        console.log("no video quality timer to close");
+        break;
+    }
+
+
+    // switch to start timer for new video quality
+    currentVideoQualityType.current = e.data;
+    current_playbackQualityStartTime.current = ( (new Date()).getTime() );
+    switch (currentVideoQualityType.current) {
+      case videoQualityTypes.hd2160:
+        // console.log("video quality is 2160p / start timer");      
+        formerVideoQualityType.current = videoQualityTypes.hd2160;
+        break;
+      case videoQualityTypes.hd1440:
+        // console.log("video quality is 1440p / start timer");
+        formerVideoQualityType.current = videoQualityTypes.hd1440;
+        break;
+      case videoQualityTypes.hd1080:
+        // console.log("video quality is 1080p / start timer");
+        formerVideoQualityType.current = videoQualityTypes.hd1080;
+        break;
+      case videoQualityTypes.hd720:
+        console.log("video quality is 720p / start timer");
+        formerVideoQualityType.current = videoQualityTypes.hd720;
+        break;
+      case videoQualityTypes.large:
+        // console.log("video quality is large / start timer");
+        formerVideoQualityType.current = videoQualityTypes.large;
+        break;
+      case videoQualityTypes.medium:
+        // console.log("video quality is medium / start timer");
+        formerVideoQualityType.current = videoQualityTypes.medium;
+        break;
+      case videoQualityTypes.small:
+        // console.log("video quality is small / start timer");
+        formerVideoQualityType.current = videoQualityTypes.small;
+        break;
+      case videoQualityTypes.tiny:
+        // console.log("video quality is tiny / start timer");
+        formerVideoQualityType.current = videoQualityTypes.tiny;
+        break;
+
+      default:
+        console.log("video quality doesn't exist / cannot start timer");
+        break;
+    }
+
+  };
+
+  async function uploadHandler(enteredData) {
+    const response = await 
+    fetch("/api/api_route_post_metric", {
+      method: "POST",
+      body: JSON.stringify(enteredData),
+      headers: 
+      {
+        "Content-Type": 
+        "application/json",
+      },
+    });
+    const data = await response.json();
+    console.log(data);
+   }
+
+  const opts = {
+    playerVars: {
+      // https://developers.google.com/youtube/player_parameters
+      // autoplay: 1,
+      listType: "playlist",
+      // need to grab list of videos from the database
+      // grab url from input field and strip the playlist id
+      list: "PLaq__SX2OUyly39JBsClsKzjz451ckwW_",
+      mute:1 // enabling this makes the state -1 not appear at the beginning
+    },
+  };
+
+
+  function handleVideoEnd(e) {
+    // make api endpoint call to upload and package the database to the db
+    console.log("video just ended.");
+
+    // close timer for previous video quality
+    let endTime = (new Date()).getTime();
+    switch (formerVideoQualityType.current) {
+      case videoQualityTypes.hd2160:
+        // console.log("video quality is 2160p / close timer");
+        hd2160_playbackQualityTime.current = (hd2160_playbackQualityTime.current + ( endTime - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.hd1440:
+        // console.log("video quality is 1440p / close timer");
+        hd1440_playbackQualityTime.current = (hd1440_playbackQualityTime.current + ( endTime - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.hd1080:
+        // console.log("video quality is 1080p / close timer");
+        hd1080_playbackQualityTime.current = (hd1080_playbackQualityTime.current + ( endTime - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.hd720:
+        // console.log("start time is : " + current_playbackQualityStartTime.current);
+        hd720_playbackQualityTime.current = (hd720_playbackQualityTime.current + ( endTime - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.large:
+        // console.log("video quality is large / close timer");
+        large_playbackQualityTime.current = (large_playbackQualityTime.current + ( endTime - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.medium:
+        // console.log("video quality is medium / close timer");
+        medium_playbackQualityTime.current = (medium_playbackQualityTime.current + ( endTime - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.small:
+        // console.log("video quality is small / close timer");
+        small_playbackQualityTime.current = (small_playbackQualityTime.current + ( endTime - current_playbackQualityStartTime.current));
+        break;
+      case videoQualityTypes.tiny:
+        // console.log("video quality is tiny / close timer");
+        tiny_playbackQualityTime.current = (tiny_playbackQualityTime.current + ( endTime - current_playbackQualityStartTime.current));
+        break;
+
+      default:
+        console.log("no video quality timer to close");
+        break;
+    }
+
+    uploadHandler(
+      {
+        networkProtocol: "TCP",
+        networkSpeed: "4G LTE",
+        numTimesBuffering: numTimesBuffering.current,
+        totalTimeBuffering: totalTimeBuffering.current,
+        totalTimeBufferingToStartVideo: totalTimeBufferingToStartVideo.current,
+        numPlaybackQualityChanges: (numPlaybackQualityChanges.current - 1), // you don't include the first playback quality since it is the starting quality
+        hd2160PlaybackQualityTime: hd2160_playbackQualityTime.current,
+        hd1440PlaybackQualityTime: hd1440_playbackQualityTime.current,
+        hd1080PlaybackQualityTime: hd1080_playbackQualityTime.current,
+        hd720PlaybackQualityTime: hd720_playbackQualityTime.current,
+        largePlaybackQualityTime: large_playbackQualityTime.current,
+        mediumPlaybackQualityTime: medium_playbackQualityTime.current,
+        smallPlaybackQualityTime: small_playbackQualityTime.current,
+        tinyPlaybackQualityTime: tiny_playbackQualityTime.current,
+      });
+
+    // numPlaybackQualityChanges.current = 0;
+    // numTimesBuffering.current = 0;
+
+    // totalTimeBuffering.current = 0;
+    // totalTimeBufferingToStartVideo.current = 0;
+
+    // videoPlayerLoadStart.current = 0;
+    // videoPlayerPlayingStart.current = 0;
+
+    // timeActiveBufferingInProgress.current = 0;
+
+    // videoBufferingToStart.current = false;
+    // videoBufferingInProgress.current = false;
+
+    // hd2160_playbackQualityTime.current = 0;
+    // hd1440_playbackQualityTime.current = 0;
+    // hd1080_playbackQualityTime.current = 0;
+    // hd720_playbackQualityTime.current = 0;
+    // large_playbackQualityTime.current = 0;
+    // medium_playbackQualityTime.current = 0;
+    // small_playbackQualityTime.current = 0;
+    // tiny_playbackQualityTime.current = 0;
+
+    // formerVideoQualityType.current = "";
+  }
+
   return (
     <div className="container">
       <Head>
@@ -37,9 +358,20 @@ export default function Home({
 
       <main>
         <h1 className="title">
-          Welcome to <a href="https://nextjs.org">Next.js with MongoDB!</a>
+          Welcome to Quality of Experience Media Player Tool
+          {/* Welcome to <a href="https://nextjs.org">Next.js with MongoDB!</a> */}
         </h1>
 
+        <h1>Youtube Embed</h1>
+        {/* Eventually an id will be passed such that the client automatically cycles through all the videos in a playlist*/}
+        <YouTube 
+          // videoId="rokGy0huYEA"
+          onStateChange={ (e) => recordStateChange(e)}
+          onPlaybackQualityChange={ (e) => recordPlaybackQualityChange(e)}
+          onEnd= {(e) => handleVideoEnd(e)}
+          opts={opts}
+        />
+       
         {isConnected ? (
           <h2 className="subtitle">You are connected to MongoDB</h2>
         ) : (

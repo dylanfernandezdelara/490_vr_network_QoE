@@ -17,16 +17,16 @@ async function main(){
         // Make the appropriate DB calls
         // await  listDatabases(client);
 
-        await createVideoMetricsQoE(
-            client, 
-            {
-                numPlaybackQualityChanges: 1,
-                numBufferingEvents: 1,
-                durationPlaybackQualityX: 1,
-                timeToStartVideo: 1,
-                totalTimeBuffering: 1 
-            }
-        );
+        // await createVideoMetricsQoE(
+        //     client, 
+        //     {
+        //         numPlaybackQualityChanges: 1,
+        //         numBufferingEvents: 1,
+        //         durationPlaybackQualityX: 1,
+        //         timeToStartVideo: 1,
+        //         totalTimeBuffering: 1 
+        //     }
+        // );
 
     } catch (e) {
         console.error(e);
