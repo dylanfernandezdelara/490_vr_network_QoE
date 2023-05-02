@@ -1,3 +1,11 @@
+## How to Run the Project
+1. Add a .env.local file to the root of the project and add a Mongo URI (create a database on MongoDB Atlas and use this URI)
+1a. Sometimes you need to whitelist your IP address on MongoDB Atlas
+2. Run `npm install` to install dependencies
+3. Run `npm run dev` to start the project
+4. To throttle specific network conditions use the network profile tab on Google Chrome dev tools or use the Network Link Conditioner native to Mac.
+5. Go to index.tsx to change the values being recorded for networkSpeed and networkProtocol depending on what environment the webpage is running in.
+
 ## Example app using MongoDB
 
 [MongoDB](https://www.mongodb.com/) is a general purpose, document-based, distributed database built for modern application developers and for the cloud era. This example will show you how to connect to and use MongoDB as your backend for your Next.js app.

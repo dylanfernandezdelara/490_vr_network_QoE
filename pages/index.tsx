@@ -308,7 +308,7 @@ export default function Home({
     uploadHandler(
       {
         networkProtocol: "TCP",
-        networkSpeed: "4G LTE",
+        networkSpeed: "Variable Network",
         numTimesBuffering: numTimesBuffering.current,
         totalTimeBuffering: totalTimeBuffering.current,
         totalTimeBufferingToStartVideo: totalTimeBufferingToStartVideo.current,
