@@ -50,6 +50,7 @@ Copy the `env.local.example` file in this directory to `.env.local` (which will 
 ```bash
 cp .env.local.example .env.local
 ```
+Q) Is .env.local.example is under with-mongodb-app directory?  (cp with-mongodb-app/.env.local.example .env.local  ?)
 
 Set each variable on `.env.local`:
 
